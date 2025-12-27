@@ -1,4 +1,4 @@
-# RUST sheet manager
+# MIRU sheet manager
 This project is for managing Google Form inputs easily using Google Spreadsheet. </br>
 The form must be same as given photo. </br>
 <img width="2320" height="1228" alt="image" src="https://github.com/user-attachments/assets/e0a4fff2-96fb-4a62-a7cd-f5d9ebc9189e" />
