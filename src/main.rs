@@ -1,8 +1,11 @@
+use std::fmt::format;
 use dotenv::dotenv;
 use tokio;
 use serde::{Deserialize, Serialize};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::fs::File;
+use std::io::{self, Write};
 
 #[derive(Debug, Deserialize)]
 struct SheetResponse {
@@ -91,26 +94,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let target_mails: Vec<String> = added_mails.split(",").map(|x| x.to_string()).collect();
     let mut invite_number: Vec<String> = Vec::new();
     let mut invite_mails: Vec<String> = Vec::new();
+    let mut list_number: Vec<String> = Vec::new();
+    let mut list_mails: Vec<String> = Vec::new();
     let sheet_data = read_google_sheet(&client).await?;
     for i in &sheet_data.values {
         let mut new_vec: Vec<String> = Vec::new();
-        new_vec.push(i[2].clone());
-        new_vec.push(i[1].clone());
+        new_vec.push(i[2].clone()); //name
+        new_vec.push(i[1].clone()); //mail
         if i[5].clone().find("-") == None && i[5].clone().find("전화번호") == None {
             let org_phone_num = i[5].clone();
             let new_phone_num: String = format!("{}-{}-{}",&org_phone_num.to_string()[0..3], &&org_phone_num.to_string()[3..7], &org_phone_num.to_string()[7..]);
             new_vec.push(new_phone_num);
         }
-        else {new_vec.push(i[5].clone());}
+        else {new_vec.push(i[5].clone());} //phone_number
 
-        if target_number.contains(&new_vec[0].to_string()){
-            invite_number.push(new_vec[2].to_string());
+        if !target_number.contains(&new_vec[2].to_string()) && i[5].clone().find("전화번호") == None {
+            invite_number.push(format!("{}:{}",new_vec[0].to_string(),new_vec[2].to_string()));
+            list_number.push(new_vec[2].to_string());
         }
         if !target_mails.contains(&new_vec[1].to_string()) && new_vec[1].clone().to_string().find("hanyang") != None {
-            invite_mails.push(new_vec[1].to_string());
+            invite_mails.push(format!("{}:{}",new_vec[0].to_string(),new_vec[1].to_string()));
+            list_mails.push(new_vec[1].to_string());
         }
     }
     println!("invite mails: {:?}", invite_mails.join(","));
     println!("invite_numbers: {:?}", invite_number.join(","));
-    Ok(())
+
+    let mut f = File::create("mails.txt")?;
+    f.write_all(list_mails.join(",").as_ref())?;
+    let mut f1 = File::create("phones.txt")?;
+    f1.write_all(list_number.join(",").as_ref())?;
+    Ok(())  // (4)
 }
